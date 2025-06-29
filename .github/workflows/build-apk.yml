@@ -46,7 +46,7 @@ jobs:
       - name: Build with Buildozer
         # We need to run buildozer with sudo because of how GitHub Actions permissions work
         # And we need to give it access to the current directory
-        run: sudo buildozer -v --workdir . android debug
+        run: sudo buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
