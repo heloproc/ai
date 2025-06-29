@@ -56,6 +56,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+            ant \
             build-essential git zip unzip autoconf libtool \
             pkg-config zlib1g-dev libncurses-dev libffi-dev libssl-dev cmake
 
