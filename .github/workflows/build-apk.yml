@@ -4,15 +4,15 @@ name: Build Kivy APK with Buildozer
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
-
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      JAVA_HOME:        /opt/hostedtoolcache/Java_Zulu_jdk/17.0.15-6/x64
 
     steps:
       - name: Checkout
@@ -24,22 +24,22 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version:  '17'
 
-      # 1) Bring in sdkmanager & platform-tools only
-      - name: Setup Android SDK (cmdline-tools + platform-tools)
-        uses: android-actions/setup-android@v3
+      - name: Setup Android SDK (use preinstalled cmdline-tools 12.0)
+        uses: android-actions/setup-android@v3.2.2
         with:
-          cmdline-tools-version: '11.0'    # ensure we get sdkmanager
+          cmdline-tools-version: '12.0'
           packages: |
-            platform-tools                # only install adb, fastboot, etc.
+            platform-tools
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
 
-      # 2) Now use sdkmanager directly to grab API-36 and Build-Tools 36.0.0
-      - name: Install Android API-36 and Build-Tools
+      - name: Install Android API-36 & Build-Tools 36.0.0
         run: |
           yes | sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Set up Python
+      - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
@@ -53,15 +53,17 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install "cython<3.0"
-          python -m pip install buildozer
+          pip install --upgrade pip
+          pip install "cython<3.0"
+          pip install buildozer
 
-      - name: Create .env file from Secret
-        run: echo "PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}" > .env
+      - name: Create .env from Secret
+        run: |
+          echo "PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}" > .env
 
       - name: Build with Buildozer
-        run: buildozer -v android debug
+        run: |
+          buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
