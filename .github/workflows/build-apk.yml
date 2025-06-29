@@ -1,4 +1,3 @@
-
 # .github/workflows/build-apk.yml
 
 name: Build Kivy APK with Buildozer
@@ -27,11 +26,13 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3.2.1
         with:
-          # install platform-tools + API-36 platform + build-tools 36.0.0
+          # NOTE: the pipe (|) and correct indentation ensure
+          # sdkmanager sees three *separate* packages, not one big string.
           packages: |
             platform-tools
             platforms;android-36
             build-tools;36.0.0
+          accept-android-sdk-licenses: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -64,4 +65,3 @@ jobs:
         with:
           name: my-assistant-apk
           path: bin/*.apk
-
