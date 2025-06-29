@@ -4,12 +4,13 @@ name: Build Kivy APK with Buildozer
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
+
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       JAVA_HOME:        /opt/hostedtoolcache/Java_Zulu_jdk/17.0.15-6/x64
@@ -24,20 +25,27 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version:  '17'
+          java-version: '17'
 
-      - name: Setup Android SDK (use preinstalled cmdline-tools 12.0)
+      # 1) Install only cmdline-tools & platform-tools so we get sdkmanager
+      - name: Setup Android SDK (core only)
         uses: android-actions/setup-android@v3.2.2
         with:
           cmdline-tools-version: '12.0'
           packages: |
             platform-tools
-          accept-android-sdk-licenses: true
+          accept-android-sdk-licenses: true      # auto-accept the core tools licence
           log-accepted-android-sdk-licenses: false
 
+      # 2) Now accept EVERY Android SDK licence (this creates /licenses files)
+      - name: Accept all SDK licences
+        run: |
+          yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
+
+      # 3) Install exactly the API + build-tools you need
       - name: Install Android API-36 & Build-Tools 36.0.0
         run: |
-          yes | sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
