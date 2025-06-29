@@ -1,4 +1,4 @@
-# .github/workflows/build-apk.yml (FINAL CORRECT VERSION)
+# .github/workflows/build-apk.yml (Final Version using setup-android Action)
 
 name: Build Kivy APK with Buildozer
 
@@ -17,16 +17,29 @@ jobs:
         with:
           persist-credentials: false
 
+      # The setup-java action is often required by setup-android
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # --- THIS IS THE NEW, ROBUST SOLUTION ---
+      # This action reliably sets up the Android SDK and accepts all licenses
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3.2.1
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
+      
+      # We no longer need to install openjdk-17-jdk manually as setup-java handles it
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential git zip unzip openjdk-17-jdk autoconf libtool \
+            build-essential git zip unzip autoconf libtool \
             pkg-config zlib1g-dev libncurses-dev libffi-dev libssl-dev cmake
 
       - name: Install Python dependencies
@@ -38,13 +51,8 @@ jobs:
       - name: Create .env file from Secret
         run: echo "PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}" > .env
 
-      - name: Accept Android SDK licenses
-        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-
-      - name: Set ownership for workspace
-        run: sudo chown -R $USER:$USER .
-
       - name: Build with Buildozer
+        # Run as the current user, no sudo needed
         run: buildozer -v android debug
 
       - name: Upload APK
