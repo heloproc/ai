@@ -1,4 +1,4 @@
-# .github/workflows/build-apk.yml
+# .github/workflows/build-apk.yml (Final Corrected Version)
 
 name: Build Kivy APK with Buildozer
 
@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          persist-credentials: false # Important fix for private repos
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,8 +38,15 @@ jobs:
       - name: Create .env file from Secret
         run: echo "PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}" > .env
 
+      # --- THIS IS THE CRUCIAL FIX ---
+      - name: Accept Android SDK licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+
       - name: Build with Buildozer
-        run: buildozer -v android debug
+        # We need to run buildozer with sudo because of how GitHub Actions permissions work
+        # And we need to give it access to the current directory
+        run: sudo buildozer -v --workdir . android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
