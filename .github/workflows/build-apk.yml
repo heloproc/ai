@@ -1,4 +1,4 @@
-```yaml
+
 # .github/workflows/build-apk.yml
 
 name: Build Kivy APK with Buildozer
@@ -64,4 +64,4 @@ jobs:
         with:
           name: my-assistant-apk
           path: bin/*.apk
-```
+
