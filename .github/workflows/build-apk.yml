@@ -4,7 +4,7 @@ name: Build Kivy APK with Buildozer
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -13,6 +13,7 @@ jobs:
 
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_HOME:     /usr/local/lib/android/sdk
       JAVA_HOME:        /opt/hostedtoolcache/Java_Zulu_jdk/17.0.15-6/x64
 
     steps:
@@ -25,34 +26,39 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version:  '17'
 
-      # 1) Install only cmdline-tools & platform-tools so we get sdkmanager
-      - name: Setup Android SDK (core only)
+      # Install sdkmanager + adb/fastboot
+      - name: Setup Android SDK core
         uses: android-actions/setup-android@v3.2.2
         with:
-          cmdline-tools-version: '12.0'
+          cmdline-tools-version: '12.0' 
           packages: |
             platform-tools
-          accept-android-sdk-licenses: true      # auto-accept the core tools licence
+          accept-android-sdk-licenses: true
           log-accepted-android-sdk-licenses: false
 
-      # 2) Now accept EVERY Android SDK licence (this creates /licenses files)
-      - name: Accept all SDK licences
-        run: |
-          yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
-
-      # 3) Install exactly the API + build-tools you need
+      # Now install the API and Build-Tools you actually need
       - name: Install Android API-36 & Build-Tools 36.0.0
         run: |
-          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
+          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
+            "platforms;android-36" \
+            "build-tools;36.0.0"
+
+      # Mirror that SDK into Buildozer’s sandbox so it never re-downloads
+      - name: Seed Buildozer SDK folder
+        run: |
+          rm -rf ~/.buildozer/android/platform/android-sdk
+          mkdir -p ~/.buildozer/android/platform
+          cp -r "$ANDROID_SDK_ROOT" ~/.buildozer/android/platform/android-sdk
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install system dependencies
+      - name: Install system deps
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -60,11 +66,10 @@ jobs:
             build-essential git zip unzip autoconf libtool \
             pkg-config zlib1g-dev libncurses-dev libffi-dev libssl-dev cmake
 
-      - name: Install Python dependencies
+      - name: Install Python deps
         run: |
           pip install --upgrade pip
-          pip install "cython<3.0"
-          pip install buildozer
+          pip install "cython<3.0" buildozer
 
       - name: Create .env from Secret
         run: |
