@@ -1,4 +1,5 @@
-# .github/workflows/build-apk.yml (Final Version with Manual License Creation)
+```yaml
+# .github/workflows/build-apk.yml
 
 name: Build Kivy APK with Buildozer
 
@@ -23,9 +24,14 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # We will still use this to get the SDK installed correctly
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3.2.1
+        with:
+          # install platform-tools + API-36 platform + build-tools 36.0.0
+          packages: |
+            platform-tools
+            platforms;android-36
+            build-tools;36.0.0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -46,26 +52,16 @@ jobs:
           python -m pip install buildozer
 
       - name: Create .env file from Secret
-        run: echo "PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}" > .env
-
-      # --- THIS IS THE NEW, FORCEFUL FIX ---
-      - name: Manually create Android SDK license files
         run: |
-          # Create the licenses directory
-          mkdir -p $ANDROID_HOME/licenses/
-          # Write the known hashes for standard Android licenses into the file
-          # This pre-accepts the licenses for the SDK Platform, Build Tools, and Emulator
-          echo "24333f8a63b6825ea9c5514f83c272960dba74de" > $ANDROID_HOME/licenses/android-sdk-license
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
-          echo "d975f751698a77b662f1254ddbeed3901e976f5a" > $ANDROID_HOME/licenses/android-googletv-license
-          echo "859f33f926a8421c8083a75e33d288d0f112e591" > $ANDROID_HOME/licenses/google-gdk-license
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > $ANDROID_HOME/licenses/mips-android-sysimage-license
+          echo "PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}" > .env
 
       - name: Build with Buildozer
-        run: buildozer -v android debug
+        run: |
+          buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: my-assistant-apk
           path: bin/*.apk
+```
