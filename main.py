@@ -27,7 +27,10 @@ from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 
-load_dotenv()
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+dotenv_path = os.path.join(APP_ROOT, '.env')
+load_dotenv(dotenv_path=dotenv_path)
 PICOVOICE_ACCESS_KEY = os.getenv("PICOVOICE_ACCESS_KEY")
 
 try: import pvporcupine
