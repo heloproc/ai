@@ -30,8 +30,8 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 dotenv_path = os.path.join(APP_ROOT, '.env')
-load_dotenv(dotenv_path=dotenv_path)
-PICOVOICE_ACCESS_KEY = os.getenv("PICOVOICE_ACCESS_KEY")
+config = dotenv_values(dotenv_path)
+PICOVOICE_ACCESS_KEY = config.get("PICOVOICE_ACCESS_KEY")
 
 try: import pvporcupine
 except ImportError: pvporcupine = None
