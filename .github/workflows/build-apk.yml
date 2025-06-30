@@ -40,7 +40,9 @@ jobs:
             libffi-dev \
             libssl-dev \
             libbz2-dev \
-            libatlas-base-dev
+            libatlas-base-dev \
+            libtool-bin \
+            automake
 
       - name: Install Python dependencies
         run: |
@@ -68,13 +70,9 @@ jobs:
           yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
           ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-      - name: Patch libffi configure.ac
+      - name: Create python-for-android directory structure
         run: |
-          mkdir -p ~/.buildozer/android/platform/
-          # Let buildozer create initial directories
-          buildozer init
-          
-          # Create the patch directory
+          # Create directories for python-for-android and the libffi recipe
           mkdir -p ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/patches
           
           # Create a patch for the configure.ac file
@@ -93,10 +91,10 @@ jobs:
              fi
           ' > ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/patches/fix-lt-sys-symbol-uscore.patch
 
-      - name: Modify libffi recipe
+      - name: Create custom libffi recipe
         run: |
-          mkdir -p ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/
-          echo '
+          # Create the recipe implementation
+          cat > ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py << 'EOF'
           from pythonforandroid.recipe import Recipe
           from pythonforandroid.toolchain import shprint, current_directory
           from os.path import exists, join
@@ -139,15 +137,7 @@ jobs:
                   return ["ffi"]
                   
           recipe = LibffiRecipe()
-          ' > ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
-
-      - name: Install libtool with specific version
-        run: |
-          # Install libtool specifically
-          sudo apt-get install -y libtool-bin
-          
-          # Ensure we have the right versions of autotools
-          sudo apt-get install -y automake autoconf
+          EOF
 
       - name: Build with Buildozer
         run: |
@@ -158,6 +148,7 @@ jobs:
           export ANDROIDAPI="33"
           export ANDROIDMINAPI="21"
           
+          # Run buildozer with verbose output
           buildozer -v android debug
 
       - name: Upload APK
