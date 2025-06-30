@@ -8,6 +8,8 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer:latest
 
     steps:
       - name: Checkout
@@ -15,71 +17,18 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install system deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-pip \
-            build-essential \
-            git \
-            python3 \
-            python3-dev \
-            ffmpeg \
-            libsdl2-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev \
-            libsdl2-ttf-dev \
-            libportmidi-dev \
-            libswscale-dev \
-            libavformat-dev \
-            libavcodec-dev \
-            zlib1g-dev \
-            libgstreamer1.0 \
-            gstreamer1.0-plugins-base \
-            gstreamer1.0-plugins-good \
-            autoconf \
-            libtool \
-            libffi-dev \
-            pkg-config \
-            zip \
-            unzip \
-            openjdk-17-jdk
-
-      - name: Install Python deps
-        run: |
-          pip install --upgrade pip
-          pip install "cython<3.0" buildozer==1.5.0
-
       - name: Create .env from Secret
         run: |
           echo "PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}" > .env
 
-      - name: Setup Android SDK
+      - name: Install required dependencies
         run: |
-          mkdir -p ~/.buildozer/android/platform/
-          
-          # Download Command line tools
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
-          unzip -q commandlinetools-linux-9477386_latest.zip -d ~/.buildozer/android/platform/android-sdk/cmdline-tools
-          mv ~/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
-          rm commandlinetools-linux-9477386_latest.zip
-          
-          # Create compatibility path for old sdkmanager location
-          mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
-          ln -sf ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-          
-          # Accept licenses and install necessary packages
-          yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+          apt-get update
+          apt-get install -y python3-pip
 
       - name: Build with Buildozer
         run: |
+          # Make sure to use the correct requirements that match your project
           buildozer -v android debug
 
       - name: Upload APK
