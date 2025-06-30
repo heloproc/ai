@@ -7,150 +7,25 @@ on:
 
 jobs:
   build-android:
+    name: Build APK
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-pip \
-            build-essential \
-            git \
-            zip \
-            unzip \
-            openjdk-17-jdk \
-            autoconf \
-            libtool \
-            pkg-config \
-            zlib1g-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            cmake \
-            libffi-dev \
-            libssl-dev \
-            libbz2-dev \
-            libatlas-base-dev \
-            libtool-bin \
-            automake
-
-      - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
-          pip install "cython<3.0" buildozer==1.5.0
-
+          
       - name: Create .env from Secret
         run: |
           echo "PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}" > .env
-
-      - name: Setup Android SDK
-        run: |
-          mkdir -p ~/.buildozer/android/platform/
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
-          unzip -q commandlinetools-linux-9477386_latest.zip -d ~/.buildozer/android/platform/android-sdk/cmdline-tools
-          mv ~/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
-          rm commandlinetools-linux-9477386_latest.zip
           
-          # Create compatibility path for old sdkmanager location
-          mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
-          ln -sf ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-          
-          # Accept licenses and install necessary packages
-          yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
-
-      - name: Create python-for-android directory structure
-        run: |
-          # Create directories for python-for-android and the libffi recipe
-          mkdir -p ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/patches
-          
-          # Create a patch for the configure.ac file
-          echo 'diff --git a/configure.ac b/configure.ac
-          --- a/configure.ac
-          +++ b/configure.ac
-          @@ -212,7 +212,8 @@
-           fi
-           
-           if test x$enable_symvers = xyes; then
-          -  AC_REQUIRE([LT_SYS_SYMBOL_USCORE])
-          +  m4_pattern_allow([LT_SYS_SYMBOL_USCORE])
-          +  m4_ifdef([LT_SYS_SYMBOL_USCORE], [LT_SYS_SYMBOL_USCORE], [AC_MSG_WARN([LT_SYS_SYMBOL_USCORE not defined])])
-             if test "x$sys_symbol_underscore" = xyes; then
-               AC_DEFINE(SYMBOL_UNDERSCORE, 1, [Define if symbols are underscored])
-             fi
-          ' > ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/patches/fix-lt-sys-symbol-uscore.patch
-
-      - name: Create custom libffi recipe
-        run: |
-          # Create the recipe implementation
-          cat > ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py << 'EOF'
-          from pythonforandroid.recipe import Recipe
-          from pythonforandroid.toolchain import shprint, current_directory
-          from os.path import exists, join
-          from multiprocessing import cpu_count
-          import sh
-
-          class LibffiRecipe(Recipe):
-              version = "v3.4.4"
-              url = "https://github.com/libffi/libffi/archive/{version}.tar.gz"
-              depends = []
-              name = "libffi"
-              
-              def should_build(self, arch):
-                  return not exists(join(self.get_build_dir(arch.arch), ".libs", "libffi.a"))
-                  
-              def build_arch(self, arch):
-                  env = self.get_recipe_env(arch)
-                  with current_directory(self.get_build_dir(arch.arch)):
-                      # Apply patch if it exists
-                      patch_file = join(self.recipe_dir, "patches", "fix-lt-sys-symbol-uscore.patch")
-                      if exists(patch_file):
-                          shprint(sh.patch, "-p1", "-i", patch_file)
-                          
-                      if not exists("configure"):
-                          shprint(sh.Command("./autogen.sh"), _env=env)
-                          
-                      shprint(sh.Command("./configure"), "--host=" + arch.command_prefix,
-                              "--prefix=" + self.get_build_dir(arch.arch) + "/install",
-                              "--disable-builddir", _env=env)
-                      shprint(sh.make, "-j", str(cpu_count()), _env=env)
-                      shprint(sh.make, "install", _env=env)
-                      
-              def get_include_dirs(self, arch):
-                  return [join(self.get_build_dir(arch.arch), "install", "include")]
-                  
-              def get_library_dirs(self, arch):
-                  return [join(self.get_build_dir(arch.arch), "install", "lib")]
-                  
-              def get_libraries(self, arch):
-                  return ["ffi"]
-                  
-          recipe = LibffiRecipe()
-          EOF
-
       - name: Build with Buildozer
-        run: |
-          # Explicit environment variables to help buildozer find tools
-          export PATH="$PATH:$HOME/.buildozer/android/platform/android-sdk/tools/bin"
-          export ANDROIDSDK="$HOME/.buildozer/android/platform/android-sdk"
-          export ANDROIDNDK="$HOME/.buildozer/android/platform/android-ndk-r25b"
-          export ANDROIDAPI="33"
-          export ANDROIDMINAPI="21"
+        uses: ArtemSBulgakov/buildozer-action@v1
+        with:
+          command: buildozer android debug
+          buildozer_version: stable
           
-          # Run buildozer with verbose output
-          buildozer -v android debug
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
