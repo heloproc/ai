@@ -1,6 +1,6 @@
 [app]
-title = My Voice Assistant
-package.name = myassistant
+title = Voice Assistant
+package.name = assistant
 package.domain = org.test
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,ttf,json,pv,ppn,onnx,env
@@ -9,7 +9,7 @@ requirements = python3,kivy==2.2.1,pyjnius==1.6.1,cython==0.29.36,android,reques
 orientation = portrait
 android.wakelock = True
 android.permissions = RECORD_AUDIO, INTERNET, READ_PHONE_STATE, CALL_PHONE
-android.api = 30
+android.api = 34
 android.minapi = 21
 android.archs = arm64-v8a
 android.add_assets = assets
