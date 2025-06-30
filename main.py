@@ -17,7 +17,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.clock import Clock
 from kivy.utils import platform
 from kivy.logger import Logger
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 from kivy.uix.settings import SettingsWithSidebar
 from kivy.uix.modalview import ModalView
 from kivy.uix.recycleview import RecycleView
@@ -28,7 +28,6 @@ from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-
 dotenv_path = os.path.join(APP_ROOT, '.env')
 config = dotenv_values(dotenv_path)
 PICOVOICE_ACCESS_KEY = config.get("PICOVOICE_ACCESS_KEY")
