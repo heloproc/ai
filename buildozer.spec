@@ -5,7 +5,7 @@ package.domain = org.test
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,ttf,json,pv,ppn,onnx,env
 version = 1.0
-requirements = python3,kivy==2.2.1,pyjnius==1.6.1,cython==0.29.36,android,requests,numpy,sounddevice,vosk,pvporcupine,piper-tts,python-dotenv,certifi
+requirements = python3,kivy==2.2.1,pyjnius==1.6.1,cython==0.29.36,android,requests,numpy,sounddevice,vosk,pvporcupine,piper-tts,python-dotenv,certifi,openssl
 orientation = portrait
 android.wakelock = True
 android.permissions = RECORD_AUDIO, INTERNET, READ_PHONE_STATE, CALL_PHONE
