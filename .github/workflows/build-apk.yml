@@ -9,36 +9,11 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
 
-    env:
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      ANDROID_HOME: /usr/local/lib/android/sdk
-      JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.15-6/x64
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      # Install Android SDK
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3.2.2
-        with:
-          cmdline-tools-version: '12.0'
-          packages: platform-tools platforms;android-33 build-tools;33.0.2
-          accept-android-sdk-licenses: true
-
-      # Mirror that SDK into Buildozer's sandbox
-      - name: Seed Buildozer SDK folder
-        run: |
-          mkdir -p ~/.buildozer/android/platform
-          ln -sf "$ANDROID_SDK_ROOT" ~/.buildozer/android/platform/android-sdk
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
@@ -49,18 +24,59 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            ant \
-            build-essential git zip unzip autoconf libtool \
-            pkg-config zlib1g-dev libncurses-dev libffi-dev libssl-dev cmake
+            python3-pip \
+            build-essential \
+            git \
+            python3 \
+            python3-dev \
+            ffmpeg \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libsdl2-ttf-dev \
+            libportmidi-dev \
+            libswscale-dev \
+            libavformat-dev \
+            libavcodec-dev \
+            zlib1g-dev \
+            libgstreamer1.0 \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            autoconf \
+            libtool \
+            libffi-dev \
+            pkg-config \
+            zip \
+            unzip \
+            openjdk-17-jdk
 
       - name: Install Python deps
         run: |
           pip install --upgrade pip
-          pip install "cython<3.0" buildozer
+          pip install "cython<3.0" buildozer==1.5.0
 
       - name: Create .env from Secret
         run: |
           echo "PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}" > .env
+
+      - name: Setup Android SDK
+        run: |
+          mkdir -p ~/.buildozer/android/platform/
+          
+          # Download Command line tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+          unzip -q commandlinetools-linux-9477386_latest.zip -d ~/.buildozer/android/platform/android-sdk/cmdline-tools
+          mv ~/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
+          rm commandlinetools-linux-9477386_latest.zip
+          
+          # Create compatibility path for old sdkmanager location
+          mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
+          ln -sf ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+          
+          # Accept licenses and install necessary packages
+          yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+          ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
       - name: Build with Buildozer
         run: |
