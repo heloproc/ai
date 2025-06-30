@@ -36,10 +36,11 @@ jobs:
             zlib1g-dev \
             libncurses5-dev \
             libncursesw5-dev \
-            libtinfo5 \
             cmake \
             libffi-dev \
-            libssl-dev
+            libssl-dev \
+            libbz2-dev \
+            libatlas-base-dev
 
       - name: Install Python dependencies
         run: |
@@ -140,8 +141,23 @@ jobs:
           recipe = LibffiRecipe()
           ' > ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
 
+      - name: Install libtool with specific version
+        run: |
+          # Install libtool specifically
+          sudo apt-get install -y libtool-bin
+          
+          # Ensure we have the right versions of autotools
+          sudo apt-get install -y automake autoconf
+
       - name: Build with Buildozer
         run: |
+          # Explicit environment variables to help buildozer find tools
+          export PATH="$PATH:$HOME/.buildozer/android/platform/android-sdk/tools/bin"
+          export ANDROIDSDK="$HOME/.buildozer/android/platform/android-sdk"
+          export ANDROIDNDK="$HOME/.buildozer/android/platform/android-ndk-r25b"
+          export ANDROIDAPI="33"
+          export ANDROIDMINAPI="21"
+          
           buildozer -v android debug
 
       - name: Upload APK
