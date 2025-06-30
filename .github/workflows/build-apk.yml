@@ -1,5 +1,3 @@
-# .github/workflows/build-apk.yml
-
 name: Build Kivy APK with Buildozer
 
 on:
@@ -13,8 +11,8 @@ jobs:
 
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      ANDROID_HOME:     /usr/local/lib/android/sdk
-      JAVA_HOME:        /opt/hostedtoolcache/Java_Zulu_jdk/17.0.15-6/x64
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.15-6/x64
 
     steps:
       - name: Checkout
@@ -26,32 +24,24 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version:  '17'
+          java-version: '17'
 
       # Install sdkmanager + adb/fastboot
-      - name: Setup Android SDK core
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3.2.2
         with:
-          cmdline-tools-version: '12.0' 
+          cmdline-tools-version: '12.0'
           packages: |
             platform-tools
+            platforms;android-34
+            build-tools;34.0.0
           accept-android-sdk-licenses: true
-          log-accepted-android-sdk-licenses: false
 
-      # Now install the API and Build-Tools you actually need
-      - name: Install Android API-36 & Build-Tools 36.0.0
-        run: |
-          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
-          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
-            "platforms;android-36" \
-            "build-tools;36.0.0"
-
-      # Mirror that SDK into Buildozer’s sandbox so it never re-downloads
+      # Mirror that SDK into Buildozer's sandbox
       - name: Seed Buildozer SDK folder
         run: |
-          rm -rf ~/.buildozer/android/platform/android-sdk
           mkdir -p ~/.buildozer/android/platform
-          cp -r "$ANDROID_SDK_ROOT" ~/.buildozer/android/platform/android-sdk
+          ln -sf "$ANDROID_SDK_ROOT" ~/.buildozer/android/platform/android-sdk
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
