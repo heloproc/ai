@@ -10,4 +10,4 @@ jobs:
     steps:
       - name: Ping Render server
         run: |
-          curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36" https://polymarket-5p97.onrender.com/ping
+          curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36" https://polymarket-5p97.onrender.com
